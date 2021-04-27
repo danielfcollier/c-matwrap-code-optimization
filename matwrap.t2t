@@ -1,0 +1,128 @@
+Usando código escrito em C/C++ no Octave/Matlab
+
+
+%!target: html
+%!encoding: iso-8859-1
+%!style(html): estilo.css
+% De: http://www.shroogle.net/kelon/
+% toda a página dentro de um div
+%!postproc(html): '(?i)<body bgcolor="white" text="black">' '<body><div class="container">'
+%!postproc(html): '(?i)</body>' '</div></body>'
+% O </p> e <p> são para evitar problemas com o validator W3C
+%!postproc(html): '@@centro@@(.*)@@' '</p><center>\1</center><p>'
+%Linha em branco (blank line)
+%!postproc(html) : '@BL@' '&nbsp;'
+
+Daniel Augusto Figueiredo Collier, LINSE-EEL-UFSC
+
+Email: collier@linse.ufsc.br
+
+
+
+Com a associação matwrap/compilador é possível usar código escrito em C/C++ em linguagens de script, como Octave, Matlab ou Tela.
+
+Tecnicamente, matwrap é um wrapper, isto é, gera o código(wrapper function -"função invólucro") para converter dos tipos internos da linguagem de script para os tipos do C/C++ (ex: double, char*, float*). 
+
+== Instalação ==
+
+O endereço eletrônico da página do matwrap é: http://lnc.usc.edu/~holt/matwrap/
+
+O pacote Debian é matwrap.
+
+Além do matwrap, para o Octave(*) é necessário instalar também para o Octave o //mkoctfile// que compila código C/C++ ou Fortran, gerando um arquivo //.oct//
+
+No Debian //mkoctfile// está disponível no pacote //octave2.1-headers//.
+
+//* Para o matlab, instalar o ``cmex``; para o tela, o ``telakka``.//
+
+
+== Uso ==
+
+``matwrap -language languagename  infile1.h infile2.h [-options]``
+
+``matwrap -language languagename [-options] -cpp compiler [-options_to_C_compiler] infile.cxx``
+
+
+== Opções == 
+
+**-cpp**
+
+Executa o pré-processador no arquivo. Necessário se o código contém //#ifdefs// e/ou //macros//.
+
+**-o file.c**
+
+Especifica o nome do arquivo de saída.
+
+**-language <language_name>**
+
+De uso obrigatório, especifica a linguagem: octave, matlab ou tela.
+
+**-wraponly <list>**
+
+     Especifica um lista de funções globais ou variáveis ou classes para "wrappear".
+    A lista se estende até o fim da linha de comando, por isso essa opção deve ser a última.
+    Definições de todas as funções e classes não explicitadas na lista serão ignoradas. 
+    Isso permite especificar todos os arquivos //.h// que são necessários para definir todos os tipos, mas somente "wrappear" algumas das funções.
+
+    Funções globais e variáveis são especificadas simplesmente pelo nome. Classes são especificadas pela palavra //class// seguida pelo nome da classe. Por exemplo, 
+
+  matwrap -language matlab myfile.h 
+         -wraponly myglobalfunc class myclass
+
+
+**-stub file_stub.m**
+
+Tem como saída o arquivo que será usado para carregar as funções. Antes de usar qualquer uma das funções, é obrigatório chamar a função stub.
+
+ex:
+
+<octave1:> file_stub
+
+
+== Observações ==
+
+- O arquivo de entrada é um //.h//, ou seja, todo o código é escrito nesse //.h//.
+
+- no final de cada função deve ser especificado o formato das variáveis de entrada/saída.
+
+- cuidado para não criar funções com nomes já existentes.
+
+
+
+== Exemplos  ==
+
+Para a geração de um arquivo //.oct// a partir de código em C, apresentamos os seguintes exemplos:
+
+=== Exemplo 1 ===
+
+Convolução linear entre dois sinais. Lembramos que a convolução linear entre dois sinais //x(n)// e //h(n)// é definida por:
+
+[sum_conv.png]
+
+Para calcular a convolução linear pela definição, é preciso fazer um ajuste dos índices:
+
+[ind_conv.png]
+
+%!include: ``conv_C.h``
+
+Para compilar, são executados no shell:
+
+%!include: ``comandos``
+
+E, no octave:
+
+%!include: ``comandos_oct``
+
+=== Exemplo 2 ===
+
+Calcula o produto de duas matrizes. Essa função mostra como tratar matrizes para uso no matwrap.
+
+%!include: ``algebra.h``
+
+No shell:
+%!include: ``comandos_sh``
+
+No octave: 
+
+%!include: ``comandos_alg``
+                                          

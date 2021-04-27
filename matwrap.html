@@ -1,0 +1,242 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+<META NAME="generator" CONTENT="http://txt2tags.sf.net">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<LINK REL="stylesheet" TYPE="text/css" HREF="estilo.css">
+<TITLE>Usando código escrito em C/C++ no Octave/Matlab</TITLE>
+</HEAD><body><div class="container">
+<P ALIGN="center"><CENTER><H1>Usando código escrito em C/C++ no Octave/Matlab</H1>
+<FONT SIZE="4">
+</FONT></CENTER>
+
+<P>
+Daniel Augusto Figueiredo Collier, LINSE-EEL-UFSC
+</P>
+<P>
+Email: <A HREF="mailto:collier@linse.ufsc.br">collier@linse.ufsc.br</A>
+</P>
+<P>
+Com a associação matwrap/compilador é possível usar código escrito em C/C++ em linguagens de script, como Octave, Matlab ou Tela.
+</P>
+<P>
+Tecnicamente, matwrap é um wrapper, isto é, gera o código(wrapper function -"função invólucro") para converter dos tipos internos da linguagem de script para os tipos do C/C++ (ex: double, char*, float*). 
+</P>
+<H2>Instalação</H2>
+<P>
+O endereço eletrônico da página do matwrap é: <A HREF="http://lnc.usc.edu/~holt/matwrap/">http://lnc.usc.edu/~holt/matwrap/</A>
+</P>
+<P>
+O pacote Debian é matwrap.
+</P>
+<P>
+Além do matwrap, para o Octave(*) é necessário instalar também para o Octave o <I>mkoctfile</I> que compila código C/C++ ou Fortran, gerando um arquivo <I>.oct</I>
+</P>
+<P>
+No Debian <I>mkoctfile</I> está disponível no pacote <I>octave2.1-headers</I>.
+</P>
+<P>
+<I>* Para o matlab, instalar o <CODE>cmex</CODE>; para o tela, o <CODE>telakka</CODE>.</I>
+</P>
+<H2>Uso</H2>
+<P>
+<CODE>matwrap -language languagename  infile1.h infile2.h [-options]</CODE>
+</P>
+<P>
+<CODE>matwrap -language languagename [-options] -cpp compiler [-options_to_C_compiler] infile.cxx</CODE>
+</P>
+<H2>Opções</H2>
+<P>
+<B>-cpp</B>
+</P>
+<P>
+Executa o pré-processador no arquivo. Necessário se o código contém <I>#ifdefs</I> e/ou <I>macros</I>.
+</P>
+<P>
+<B>-o file.c</B>
+</P>
+<P>
+Especifica o nome do arquivo de saída.
+</P>
+<P>
+<B>-language &lt;language_name&gt;</B>
+</P>
+<P>
+De uso obrigatório, especifica a linguagem: octave, matlab ou tela.
+</P>
+<P>
+<B>-wraponly &lt;list&gt;</B>
+</P>
+<P>
+     Especifica um lista de funções globais ou variáveis ou classes para "wrappear".
+    A lista se estende até o fim da linha de comando, por isso essa opção deve ser a última.
+    Definições de todas as funções e classes não explicitadas na lista serão ignoradas. 
+    Isso permite especificar todos os arquivos <I>.h</I> que são necessários para definir todos os tipos, mas somente "wrappear" algumas das funções.
+</P>
+<P>
+    Funções globais e variáveis são especificadas simplesmente pelo nome. Classes são especificadas pela palavra <I>class</I> seguida pelo nome da classe. Por exemplo, 
+</P>
+<P>
+  matwrap -language matlab myfile.h 
+         -wraponly myglobalfunc class myclass
+</P>
+<P>
+<B>-stub file_stub.m</B>
+</P>
+<P>
+Tem como saída o arquivo que será usado para carregar as funções. Antes de usar qualquer uma das funções, é obrigatório chamar a função stub.
+</P>
+<P>
+ex:
+</P>
+<P>
+&lt;octave1:&gt; file_stub
+</P>
+<H2>Observações</H2>
+<UL>
+<LI>O arquivo de entrada é um <I>.h</I>, ou seja, todo o código é escrito nesse <I>.h</I>.
+<P></P>
+<LI>no final de cada função deve ser especificado o formato das variáveis de entrada/saída.
+<P></P>
+<LI>cuidado para não criar funções com nomes já existentes.
+</UL>
+
+<H2>Exemplos</H2>
+<P>
+Para a geração de um arquivo <I>.oct</I> a partir de código em C, apresentamos os seguintes exemplos:
+</P>
+<H3>Exemplo 1</H3>
+<P>
+Convolução linear entre dois sinais. Lembramos que a convolução linear entre dois sinais <I>x(n)</I> e <I>h(n)</I> é definida por:
+</P>
+<P>
+<IMG ALIGN="middle" SRC="sum_conv.png" BORDER="0" ALT="">
+</P>
+<P>
+Para calcular a convolução linear pela definição, é preciso fazer um ajuste dos índices:
+</P>
+<P>
+<IMG ALIGN="middle" SRC="ind_conv.png" BORDER="0" ALT="">
+</P>
+<PRE>
+  // conv_C.h
+  #include &lt;stdio.h&gt;
+  
+  void conv_C(float *x, float *h, unsigned int tam_h, unsigned int tam_x, float *y)
+  {   
+      // Calcula a convolução linear entre 2 sinais finitos usando a definição.    
+      int index_l, index_n, n_length, aux;
+      float sum;
+      
+      n_length = tam_x + tam_h - 1;
+      
+      for ( index_n=0; index_n &lt; n_length; ++index_n ) 
+      {
+          for ( sum=0, index_l=0; index_l &lt; tam_x; ++index_l ) 
+          {
+              aux = index_n - index_l;
+              if ( (aux &gt;= 0) &amp;&amp; (aux &lt; tam_h) )
+                  sum += x[index_l] * h[index_n - index_l]; 
+          }
+          y[index_n] = sum;
+      }   
+  }//%input x(tam_x)
+  //%input h(tam_h)
+  //%output y(tam_x + tam_h - 1)
+</PRE>
+<P>
+Para compilar, são executados no shell:
+</P>
+<PRE>
+  matwrap -language octave convC.h -o convC_octave.cc -stub convC_stub.m
+  
+  mkoctfile -v convC_octave.cc
+  
+</PRE>
+<P>
+E, no octave:
+</P>
+<PRE>
+  convC_stub %Habilita o uso de todas as funções contidas no h-file
+  
+  y = conv_C([1 2 3 4 5]', [2 5 6 7 8]'); %Chamada de uma das funções
+  
+  y'
+  ans = 
+     2   9  22  42  70  86  82  67  40
+  
+</PRE>
+<H3>Exemplo 2</H3>
+<P>
+Calcula o produto de duas matrizes. Essa função mostra como tratar matrizes para uso no matwrap.
+</P>
+<PRE>
+  // algebra.h
+  
+  #include &lt;stdio.h&gt;
+  
+  void multiplica(float *A, const unsigned int la, const unsigned int ca, const float *B, const unsigned int lb, const unsigned int cb, float *C)
+  {   
+      // Calcula o produto de duas matrizes e imprime o índice do elemento na matriz no formato (linha, coluna) e no formato só linha (matriz como um vetor).
+      unsigned int indexM, indexN, indexP, posicao1, posicao2, posicao3;
+      float sum;
+      
+      for ( indexN=0; indexN &lt; cb; ++indexN )
+      {
+          for ( indexM=0; indexM &lt; la; ++indexM )
+          {   
+              for ( sum=0, indexP=0; indexP &lt; ca; ++indexP )
+              {
+                  posicao1 = indexM + indexP*la;  
+                  /* Os argumentos da função são ponteiros
+                  para os 1os. elementos de cada matriz. 
+                  * Assim, a procura dos elementos deve ser feita de maneira linear. 
+                  */ Por isso, a procura dos elementos segue de maneira linear. 
+                  posicao2 = indexP + indexN*ca;  
+                  posicao3 = indexM + indexN*la; // lc=la
+                  sum+=A[posicao1]*B[posicao2];
+                  C[posicao3]=sum;
+              }
+          printf("C(%d,%d) = C(%d) = %.2f\n", indexM, indexN, posicao3, sum );    
+          }
+      }
+  }//%input A(la, ca)
+  //%input B(lb, cb)
+  //%output C(la, cb)
+</PRE>
+<P>
+No shell:
+</P>
+<PRE>
+  matwrap -language octave algebra.h -o algebra_octave.cc -stub algebra_stub.m
+  
+  mkoctfile algebra_octave.cc
+  
+</PRE>
+<P></P>
+<P>
+No octave: 
+</P>
+<PRE>
+  algebra_stub
+  
+  A = [1 2 3; 4 5 6];
+  
+  B = [1 2; 3 4;5 6];
+  
+  C = multiplica(A,B)
+  
+  C(0,0) = C(0) = 22.00
+  C(1,0) = C(1) = 49.00
+  C(0,1) = C(2) = 28.00
+  C(1,1) = C(3) = 64.00
+  C =
+  
+    22  28
+    49  64
+  
+</PRE>
+
+<!-- html code generated by txt2tags 2.0 (http://txt2tags.sf.net) -->
+<!-- cmdline: txt2tags -t html matwrap.t2t -->
+</div></body></HTML>
